@@ -1,41 +1,48 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
+using System.Net.Http.Headers;
+using IdentityModel.Client;
 using Microsoft.Extensions.DependencyInjection;
-using Duende.AccessTokenManagement;
-using Duende.IdentityModel.Client;
-using Microsoft.Extensions.Logging;
 
-var serviceCollection = new ServiceCollection();
-serviceCollection.AddLogging(builder => builder.AddConsole());
-serviceCollection.AddDistributedMemoryCache();
-serviceCollection.AddClientCredentialsHttpClient("NetatmoApi", "NetatmoApi.client", client =>
+
+
+
+
+var services = new ServiceCollection();
+services.AddHttpClient();
+
+var serviceProvider = services.BuildServiceProvider();
+var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+
+async Task<string> GetPasswordTokenAsync()
 {
-    client.BaseAddress = new Uri("https://app.muller-intuitiv.net");
-});
+    var client = httpClientFactory.CreateClient();
 
-serviceCollection.AddClientCredentialsTokenManagement()
-    .AddClient("NetatmoApi.client", client =>
+    var tokenResponse = await client.RequestPasswordTokenAsync(new PasswordTokenRequest
     {
-        client.TokenEndpoint = "https://app.muller-intuitiv.net/oauth2/token";
-
-        client.ClientId = "59e604948fe283fd4dc7e355";
-        client.ClientSecret = "rAeWu8Y3YqXEPqRJ4BpFzFG98MRXpCcz";
-
-        client.Scope = "read_muller write_muller";
-        
-        client.Parameters.Add("user_prefix", "muller", ParameterReplaceBehavior.All);
-        client.Parameters.Add("grant_type", "password", ParameterReplaceBehavior.All);
-        client.Parameters.Add("username", "", ParameterReplaceBehavior.All); // password manager
-        client.Parameters.Add("password", "", ParameterReplaceBehavior.All); // Password manager
+        Address = "https://app.muller-intuitiv.net/oauth2/token",
+        ClientId = "59e604948fe283fd4dc7e355",
+        ClientSecret = "rAeWu8Y3YqXEPqRJ4BpFzFG98MRXpCcz",
+        Parameters = new Parameters(new []{ new KeyValuePair<string, string>("user_prefix", "muller") }),
+        UserName = "",/* password manager */
+        Password = "",/* password manager */
+        Scope = "read_muller write_muller",
+        GrantType = "password"
     });
 
-// Step 2: Build the service provider
-var serviceProvider = serviceCollection.BuildServiceProvider();
+    if (tokenResponse.IsError)
+    {
+        throw new Exception($"Token request failed: {tokenResponse.Error}");
+    }
 
-// Step 3: Use the service
-var httpClientFactory = serviceProvider.GetService<IHttpClientFactory>();
+    return tokenResponse.AccessToken;
+}
+
+var token = await GetPasswordTokenAsync();
 
 var netatmoClient = httpClientFactory.CreateClient("NetatmoApi");
+netatmoClient.BaseAddress = new Uri("https://app.muller-intuitiv.net");
+netatmoClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
 await Execute();
 
