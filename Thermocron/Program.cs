@@ -46,23 +46,23 @@ netatmoClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValu
 
 await Execute();
 
-// while (true)
-// {
-//     DateTime now = DateTime.Now;
-//     DateTime nextExecution = now.AddMinutes(1).AddSeconds(-now.Second).AddMilliseconds(-now.Millisecond);
-//     TimeSpan delay = nextExecution - now;
-//
-//     try
-//     {
-//         var cancellationToken = new CancellationToken();
-//         await Task.Delay(delay, cancellationToken);
-//         _ = Task.Run(Execute, cancellationToken);
-//     }
-//     catch (TaskCanceledException)
-//     {
-//         break; // Exit gracefully on cancellation
-//     }
-// }
+while (true)
+{
+    DateTime now = DateTime.Now;
+    DateTime nextExecution = now.AddMinutes(1).AddSeconds(-now.Second).AddMilliseconds(-now.Millisecond);
+    TimeSpan delay = nextExecution - now;
+
+    try
+    {
+        var cancellationToken = new CancellationToken();
+        await Task.Delay(delay, cancellationToken);
+        _ = Task.Run(Execute, cancellationToken);
+    }
+    catch (TaskCanceledException)
+    {
+        break; // Exit gracefully on cancellation
+    }
+}
 
 async Task Execute()
 {
