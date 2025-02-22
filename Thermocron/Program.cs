@@ -4,9 +4,8 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using IdentityModel.Client;
 using Microsoft.Extensions.DependencyInjection;
-
-
-
+using Thermocron.Api;
+using Thermocron.Data;
 
 
 var services = new ServiceCollection();
@@ -72,17 +71,46 @@ async Task Execute()
     
     var data = JsonSerializer.Deserialize<Response>(json);
 
-    if (data?.Body?.Home?.Rooms != null && data.Body.Home.Rooms.Count > 0 && data.Body.Home.Modules != null)
+    if (data?.Body?.Home?.Rooms == null || data.Body.Home.Rooms.Count == 0)
     {
-        var room = data.Body.Home.Rooms[0];
-        var outdoorModule = data.Body.Home.Modules.Find(m => m.OutdoorTemperature.HasValue);
-
-        TemperatureInfo tempInfo = new TemperatureInfo(
-            room.ThermMeasuredTemperature,
-            room.ThermSetpointTemperature,
-            outdoorModule?.OutdoorTemperature ?? 0
-        );
-
-        Console.WriteLine(tempInfo);
+        Console.WriteLine("Invalid JSON structure.");
+        return;
     }
+
+    using var context = new AppDbContext();
+
+    context.Database.EnsureCreated();
+
+    // Extract room temperature data
+    var room = data.Body.Home.Rooms[0];
+    var outdoorModule = data.Body.Home.Modules.FirstOrDefault(m => m.OutdoorTemperature.HasValue);
+
+    if (outdoorModule == null)
+    {
+        Console.WriteLine("No valid outdoor module found.");
+        return;
+    }
+
+    var roomId = Convert.ToInt32(room.Id);
+    var device = context.Devices.FirstOrDefault(d => d.Id == roomId);
+
+    if (device == null)
+    {
+        device = new Device { Id = roomId };
+
+        context.Devices.Add(device);
+        context.SaveChanges();
+    }
+
+    var measure = new Measure
+    {
+        DeviceId = device.Id,
+        MeasuredTemperature = room.ThermMeasuredTemperature,
+        TargetTemperature = room.ThermSetpointTemperature,
+        OutdoorTemperature = outdoorModule.OutdoorTemperature ?? 0,
+        Timestamp = DateTime.Now
+    };
+
+    context.Measures.Add(measure);
+    context.SaveChanges();
 }

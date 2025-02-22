@@ -1,5 +1,7 @@
 ﻿using System.Text.Json.Serialization;
 
+namespace Thermocron.Api;
+
 public class Home
 {
     [JsonPropertyName("modules")]

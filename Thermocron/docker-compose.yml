@@ -1,0 +1,15 @@
+﻿services:
+  db:
+    container_name: thermocron_db_dev
+    image: postgres
+    ports:
+      - "15432:5432"
+    volumes:
+      - thermocron_sqldata_dev:/thermocron_sqldata
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER_DEV}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_DEV}
+      - PGDATA=/thermocron_sqldata
+
+volumes:
+  thermocron_sqldata_dev:
