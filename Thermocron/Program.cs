@@ -1,6 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using System.Net.Http.Headers;
+using System.Text.Json;
 using IdentityModel.Client;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -66,8 +67,22 @@ while (true)
 
 async Task Execute()
 {
-    Console.WriteLine("Thermocron!");
     var response = await netatmoClient.PostAsync("syncapi/v1/homestatus", new FormUrlEncodedContent(new []{ new KeyValuePair<string, string> ( "home_id",  "" /* password manager */ )}));
     var json = await response.Content.ReadAsStringAsync();
-    Console.WriteLine(json);
+    
+    var data = JsonSerializer.Deserialize<Response>(json);
+
+    if (data?.Body?.Home?.Rooms != null && data.Body.Home.Rooms.Count > 0 && data.Body.Home.Modules != null)
+    {
+        var room = data.Body.Home.Rooms[0];
+        var outdoorModule = data.Body.Home.Modules.Find(m => m.OutdoorTemperature.HasValue);
+
+        TemperatureInfo tempInfo = new TemperatureInfo(
+            room.ThermMeasuredTemperature,
+            room.ThermSetpointTemperature,
+            outdoorModule?.OutdoorTemperature ?? 0
+        );
+
+        Console.WriteLine(tempInfo);
+    }
 }
