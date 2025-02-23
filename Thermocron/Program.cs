@@ -7,110 +7,125 @@ using Microsoft.Extensions.DependencyInjection;
 using Thermocron.Api;
 using Thermocron.Data;
 
-
-var services = new ServiceCollection();
-services.AddHttpClient();
-
-var serviceProvider = services.BuildServiceProvider();
-var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
-
-async Task<string> GetPasswordTokenAsync()
+internal class Program
 {
-    var client = httpClientFactory.CreateClient();
-
-    var tokenResponse = await client.RequestPasswordTokenAsync(new PasswordTokenRequest
+    public static async Task Main(string[] args)
     {
-        Address = "https://app.muller-intuitiv.net/oauth2/token",
-        ClientId = "59e604948fe283fd4dc7e355",
-        ClientSecret = "rAeWu8Y3YqXEPqRJ4BpFzFG98MRXpCcz",
-        Parameters = new Parameters(new []{ new KeyValuePair<string, string>("user_prefix", "muller") }),
-        UserName = "",/* password manager */
-        Password = "",/* password manager */
-        Scope = "read_muller write_muller",
-        GrantType = "password"
-    });
+        var mullerUsername = Environment.GetEnvironmentVariable("thermocron_muller_username");
+        var mullerPassword = Environment.GetEnvironmentVariable("thermocron_muller_password");
+        var mullerHomeId = Environment.GetEnvironmentVariable("thermocron_muller_home_id");
 
-    if (tokenResponse.IsError)
-    {
-        throw new Exception($"Token request failed: {tokenResponse.Error}");
-    }
+        if (string.IsNullOrEmpty(mullerUsername) || string.IsNullOrEmpty(mullerPassword) || string.IsNullOrEmpty(mullerHomeId))
+        {
+            Console.WriteLine("Error: One or more required environment variables (thermocron_muller_username, thermocron_muller_password, thermocron_muller_home_id) are missing.");
+            Environment.Exit(1);
+        }
+        
+        var services = new ServiceCollection();
+        services.AddHttpClient();
 
-    return tokenResponse.AccessToken;
-}
+        var serviceProvider = services.BuildServiceProvider();
+        var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
 
-var token = await GetPasswordTokenAsync();
+        async Task<string> GetPasswordTokenAsync(string username, string password)
+        {
+            var client = httpClientFactory.CreateClient();
 
-var netatmoClient = httpClientFactory.CreateClient("NetatmoApi");
-netatmoClient.BaseAddress = new Uri("https://app.muller-intuitiv.net");
-netatmoClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var tokenResponse = await client.RequestPasswordTokenAsync(new PasswordTokenRequest
+            {
+                Address = "https://app.muller-intuitiv.net/oauth2/token",
+                ClientId = "59e604948fe283fd4dc7e355",
+                ClientSecret = "rAeWu8Y3YqXEPqRJ4BpFzFG98MRXpCcz",
+                Parameters = new Parameters(new []{ new KeyValuePair<string, string>("user_prefix", "muller") }),
+                UserName = username,
+                Password = password,
+                Scope = "read_muller write_muller",
+                GrantType = "password"
+            });
 
-await Execute();
+            if (tokenResponse.IsError)
+            {
+                throw new Exception($"Token request failed: {tokenResponse.Error}");
+            }
 
-while (true)
-{
-    DateTime now = DateTime.Now;
-    DateTime nextExecution = now.AddMinutes(1).AddSeconds(-now.Second).AddMilliseconds(-now.Millisecond);
-    TimeSpan delay = nextExecution - now;
+            return tokenResponse.AccessToken;
+        }
 
-    try
-    {
-        var cancellationToken = new CancellationToken();
-        await Task.Delay(delay, cancellationToken);
-        _ = Task.Run(Execute, cancellationToken);
-    }
-    catch (TaskCanceledException)
-    {
-        break; // Exit gracefully on cancellation
-    }
-}
+        var token = await GetPasswordTokenAsync(mullerUsername, mullerPassword);
 
-async Task Execute()
-{
-    var response = await netatmoClient.PostAsync("syncapi/v1/homestatus", new FormUrlEncodedContent(new []{ new KeyValuePair<string, string> ( "home_id",  "" /* password manager */ )}));
-    var json = await response.Content.ReadAsStringAsync();
+        var netatmoClient = httpClientFactory.CreateClient("NetatmoApi");
+        netatmoClient.BaseAddress = new Uri("https://app.muller-intuitiv.net");
+        netatmoClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        await Execute();
+
+        while (true)
+        {
+            DateTime now = DateTime.Now;
+            DateTime nextExecution = now.AddMinutes(1).AddSeconds(-now.Second).AddMilliseconds(-now.Millisecond);
+            TimeSpan delay = nextExecution - now;
+
+            try
+            {
+                var cancellationToken = new CancellationToken();
+                await Task.Delay(delay, cancellationToken);
+                _ = Task.Run(Execute, cancellationToken);
+            }
+            catch (TaskCanceledException)
+            {
+                break; // Exit gracefully on cancellation
+            }
+        }
+
+        async Task Execute()
+        {
+            var response = await netatmoClient.PostAsync("syncapi/v1/homestatus", new FormUrlEncodedContent(new []{ new KeyValuePair<string, string> ( "home_id",  mullerHomeId )}));
+            var json = await response.Content.ReadAsStringAsync();
     
-    var data = JsonSerializer.Deserialize<Response>(json);
+            var data = JsonSerializer.Deserialize<Response>(json);
 
-    if (data?.Body?.Home?.Rooms == null || data.Body.Home.Rooms.Count == 0)
-    {
-        Console.WriteLine("Invalid JSON structure.");
-        return;
+            if (data?.Body?.Home?.Rooms == null || data.Body.Home.Rooms.Count == 0)
+            {
+                Console.WriteLine("Invalid JSON structure.");
+                return;
+            }
+
+            using var context = new AppDbContext();
+
+            context.Database.EnsureCreated();
+
+            // Extract room temperature data
+            var room = data.Body.Home.Rooms[0];
+            var outdoorModule = data.Body.Home.Modules.FirstOrDefault(m => m.OutdoorTemperature.HasValue);
+
+            if (outdoorModule == null)
+            {
+                Console.WriteLine("No valid outdoor module found.");
+                return;
+            }
+
+            var roomId = Convert.ToInt32(room.Id);
+            var device = context.Devices.FirstOrDefault(d => d.Id == roomId);
+
+            if (device == null)
+            {
+                device = new Device { Id = roomId };
+
+                context.Devices.Add(device);
+                context.SaveChanges();
+            }
+
+            var measure = new Measure
+            {
+                DeviceId = device.Id,
+                MeasuredTemperature = room.ThermMeasuredTemperature,
+                TargetTemperature = room.ThermSetpointTemperature,
+                OutdoorTemperature = outdoorModule.OutdoorTemperature ?? 0,
+                Timestamp = DateTime.Now
+            };
+
+            context.Measures.Add(measure);
+            context.SaveChanges();
+        }
     }
-
-    using var context = new AppDbContext();
-
-    context.Database.EnsureCreated();
-
-    // Extract room temperature data
-    var room = data.Body.Home.Rooms[0];
-    var outdoorModule = data.Body.Home.Modules.FirstOrDefault(m => m.OutdoorTemperature.HasValue);
-
-    if (outdoorModule == null)
-    {
-        Console.WriteLine("No valid outdoor module found.");
-        return;
-    }
-
-    var roomId = Convert.ToInt32(room.Id);
-    var device = context.Devices.FirstOrDefault(d => d.Id == roomId);
-
-    if (device == null)
-    {
-        device = new Device { Id = roomId };
-
-        context.Devices.Add(device);
-        context.SaveChanges();
-    }
-
-    var measure = new Measure
-    {
-        DeviceId = device.Id,
-        MeasuredTemperature = room.ThermMeasuredTemperature,
-        TargetTemperature = room.ThermSetpointTemperature,
-        OutdoorTemperature = outdoorModule.OutdoorTemperature ?? 0,
-        Timestamp = DateTime.Now
-    };
-
-    context.Measures.Add(measure);
-    context.SaveChanges();
 }
