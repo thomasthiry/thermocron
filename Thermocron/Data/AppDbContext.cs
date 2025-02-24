@@ -4,12 +4,23 @@ namespace Thermocron.Data;
 
 public class AppDbContext : DbContext
 {
+    private string _connectionString = "";
+
+    public AppDbContext()
+    {
+    }
+
+    public AppDbContext(string connectionString)
+    {
+        _connectionString = connectionString;
+    }
+
     public DbSet<Device> Devices { get; set; }
     public DbSet<Measure> Measures { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        optionsBuilder.UseNpgsql("Host=localhost:15432;Database=thermocron_dev;Username=thermocron_dev;Password=thermocron");
+        optionsBuilder.UseNpgsql(_connectionString);
     }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)

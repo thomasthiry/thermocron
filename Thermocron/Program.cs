@@ -3,6 +3,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using IdentityModel.Client;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Thermocron.Api;
 using Thermocron.Data;
@@ -11,16 +12,25 @@ internal class Program
 {
     public static async Task Main(string[] args)
     {
-        var mullerUsername = Environment.GetEnvironmentVariable("thermocron_muller_username");
-        var mullerPassword = Environment.GetEnvironmentVariable("thermocron_muller_password");
-        var mullerHomeId = Environment.GetEnvironmentVariable("thermocron_muller_home_id");
+        var config = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appSettings.json", optional: false, reloadOnChange: true)
+            .AddJsonFile($"appSettings.dev.json", optional: true, reloadOnChange: true)
+            .AddEnvironmentVariables()
+            .Build();
+        
+        var mullerUsername = config["thermocronMullerUsername"];
+        var mullerPassword = config["thermocronMullerPassword"];
+        var mullerHomeId = config["thermocronMullerHomeId"];
+        var connectionString = config["connectionString"];
 
-        if (string.IsNullOrEmpty(mullerUsername) || string.IsNullOrEmpty(mullerPassword) || string.IsNullOrEmpty(mullerHomeId))
+        if (string.IsNullOrEmpty(mullerUsername) || string.IsNullOrEmpty(mullerPassword) || string.IsNullOrEmpty(mullerHomeId) || string.IsNullOrEmpty(connectionString))
         {
-            Console.WriteLine("Error: One or more required environment variables (thermocron_muller_username, thermocron_muller_password, thermocron_muller_home_id) are missing.");
+            Console.WriteLine("Error: One or more required environment variables (thermocron_muller_username, thermocron_muller_password, thermocron_muller_home_id, connectionString) are missing.");
             Environment.Exit(1);
         }
-        
+
+
         var services = new ServiceCollection();
         services.AddHttpClient();
 
@@ -86,11 +96,11 @@ internal class Program
 
             if (data?.Body?.Home?.Rooms == null || data.Body.Home.Rooms.Count == 0)
             {
-                Console.WriteLine("Invalid JSON structure.");
+                Console.WriteLine($"Invalid JSON structure: \\n{json}");
                 return;
             }
 
-            using var context = new AppDbContext();
+            using var context = new AppDbContext(connectionString);
 
             context.Database.EnsureCreated();
 
