@@ -1,0 +1,24 @@
+﻿
+services:
+  job:
+    container_name: thermocron_job_prod
+    image: thomasthiry/thermocron:2025-02-24.4
+    environment:
+     - thermocronMullerUsername=${thermocron_muller_username}
+     - thermocronMullerPassword=${thermocron_muller_password}
+     - thermocronMullerHomeId=${thermocron_muller_home_id}
+     - connectionString=Host=thermocron_db_prod:5432;Database=thermocron_prod;Username=${thermocron_postgres_user_prod};Password=${thermocron_postgres_password_prod}
+  db:
+    container_name: thermocron_db_prod
+    image: postgres
+    ports:
+      - "15432:5432"
+    volumes:
+      - thermocron_sqldata_prod:/thermocron_sqldata
+    environment:
+      - POSTGRES_USER=${thermocron_postgres_user_prod}
+      - POSTGRES_PASSWORD=${thermocron_postgres_password_prod}
+      - PGDATA=/thermocron_sqldata
+
+volumes:
+  thermocron_sqldata_prod:
