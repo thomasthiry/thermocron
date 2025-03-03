@@ -48,7 +48,7 @@ internal class Program
         while (true)
         {
             DateTime now = DateTime.Now;
-            DateTime nextExecution = now.AddMinutes(5).AddSeconds(-now.Second).AddMilliseconds(-now.Millisecond);
+            DateTime nextExecution = now.AddMinutes(10).AddSeconds(-now.Second).AddMilliseconds(-now.Millisecond);
             TimeSpan delay = nextExecution - now;
 
             try
@@ -57,9 +57,9 @@ internal class Program
                 await Task.Delay(delay, cancellationToken);
                 _ = Task.Run(Execute, cancellationToken);
             }
-            catch (TaskCanceledException)
+            catch (Exception exception)
             {
-                break;
+                Console.WriteLine($"An error occurred: {exception}");
             }
         }
     }
@@ -98,8 +98,9 @@ internal class Program
         }
 
         var response = await netatmoClient.PostAsync("syncapi/v1/homestatus", new FormUrlEncodedContent(new []{ new KeyValuePair<string, string>("home_id", _mullerHomeId) }));
-        
-        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        var json = await response.Content.ReadAsStringAsync();
+
+        if (json.Contains("Access token expired") || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
             Console.WriteLine("Token expired. Refreshing token...");
             lock (_lock)
@@ -108,9 +109,9 @@ internal class Program
                 netatmoClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
             }
             response = await netatmoClient.PostAsync("syncapi/v1/homestatus", new FormUrlEncodedContent(new []{ new KeyValuePair<string, string>("home_id", _mullerHomeId) }));
+            json = await response.Content.ReadAsStringAsync();
         }
 
-        var json = await response.Content.ReadAsStringAsync();
         var data = JsonSerializer.Deserialize<Response>(json);
 
         if (data?.Body?.Home?.Rooms == null || data.Body.Home.Rooms.Count == 0)
@@ -140,13 +141,16 @@ internal class Program
             context.SaveChanges();
         }
 
+        var cetTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
+        var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, cetTimeZone);
+
         var measure = new Measure
         {
             DeviceId = device.Id,
             MeasuredTemperature = room.ThermMeasuredTemperature,
             TargetTemperature = room.ThermSetpointTemperature,
             OutdoorTemperature = outdoorModule.OutdoorTemperature ?? 0,
-            Timestamp = DateTime.Now
+            Timestamp = localTime
         };
 
         context.Measures.Add(measure);

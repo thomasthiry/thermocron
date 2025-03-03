@@ -1,12 +1,12 @@
 ﻿services:
-  job:
-    container_name: thermocron_job_dev
-    image: thomasthiry/thermocron:2025-02-24.4
-    environment:
-     - thermocronMullerUsername=${thermocron_muller_username}
-     - thermocronMullerPassword=${thermocron_muller_password}
-     - thermocronMullerHomeId=${thermocron_muller_home_id}
-     - connectionString=Host=thermocron_db_dev:5432;Database=thermocron_dev;Username=${thermocron_postgres_user_dev};Password=${thermocron_postgres_password_dev}
+#  job:
+#    container_name: thermocron_job_dev
+#    image: thomasthiry/thermocron:2025-02-24.4
+#    environment:
+#     - thermocronMullerUsername=${thermocron_muller_username}
+#     - thermocronMullerPassword=${thermocron_muller_password}
+#     - thermocronMullerHomeId=${thermocron_muller_home_id}
+#     - connectionString=Host=thermocron_db_dev:5432;Database=thermocron_dev;Username=${thermocron_postgres_user_dev};Password=${thermocron_postgres_password_dev}
   db:
     container_name: thermocron_db_dev
     image: postgres
