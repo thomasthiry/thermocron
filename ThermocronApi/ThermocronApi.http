@@ -1,0 +1,6 @@
+@ThermocronApi_HostAddress = http://localhost:5114
+
+GET {{ThermocronApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

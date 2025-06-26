@@ -1,0 +1,305 @@
+@page "/"
+@using ThermocronWeb.Models
+@using ThermocronWeb.Services
+@using ApexCharts
+@inject ApiService ApiService
+
+<PageTitle>Thermocron Dashboard</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-4">Dashboard Température</h1>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <label for="deviceSelect" class="form-label">Capteur:</label>
+            <select id="deviceSelect" class="form-select" @onchange="OnDeviceChanged">
+                <option value="">Tous les capteurs</option>
+                @foreach (var device in devices)
+                {
+                    <option value="@device.Id">@(device.Name ?? $"Capteur {device.Id}")</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="periodSelect" class="form-label">Période:</label>
+            <select id="periodSelect" class="form-select" @onchange="OnPeriodChanged">
+                <option value="hour">Dernière heure</option>
+                <option value="day" selected>Dernier jour</option>
+                <option value="week">Dernière semaine</option>
+                <option value="month">Dernier mois</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="intervalSelect" class="form-label">Intervalle:</label>
+            <select id="intervalSelect" class="form-select" @onchange="OnIntervalChanged">
+                <option value="raw">Données brutes</option>
+                <option value="hour" selected>Par heure</option>
+                <option value="day">Par jour</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <button class="btn btn-primary" @onclick="RefreshData">
+                <i class="bi bi-arrow-clockwise"></i> Actualiser
+            </button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="row">
+            <div class="col-12 text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+                <p>Chargement des données...</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        @if (stats != null)
+        {
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Température Mesurée</h5>
+                            <p class="card-text">
+                                <small>Min: @stats.MinMeasured.ToString("F1")°C</small><br>
+                                <strong>Moy: @stats.AvgMeasured.ToString("F1")°C</strong><br>
+                                <small>Max: @stats.MaxMeasured.ToString("F1")°C</small>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Température Cible</h5>
+                            <p class="card-text">
+                                <small>Min: @stats.MinTarget.ToString("F1")°C</small><br>
+                                <strong>Moy: @stats.AvgTarget.ToString("F1")°C</strong><br>
+                                <small>Max: @stats.MaxTarget.ToString("F1")°C</small>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Température Extérieure</h5>
+                            <p class="card-text">
+                                <small>Min: @stats.MinOutdoor.ToString("F1")°C</small><br>
+                                <strong>Moy: @stats.AvgOutdoor.ToString("F1")°C</strong><br>
+                                <small>Max: @stats.MaxOutdoor.ToString("F1")°C</small>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Mesures</h5>
+                            <p class="card-text">
+                                <strong>@stats.TotalMeasures</strong><br>
+                                <small>points de données</small>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Évolution des Températures</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (measures.Any())
+                        {
+                            <ApexChart TItem="MeasureDto"
+                                      Title="Températures"
+                                      Options="chartOptions">
+                                
+                                <ApexPointSeries TItem="MeasureDto"
+                                               Items="measures"
+                                               Name="Température Mesurée"
+                                               SeriesType="SeriesType.Line"
+                                               XValue="@(e => e.Timestamp)"
+                                               YValue="@(e => (decimal)e.MeasuredTemperature)"
+                                               Color="#28a745" />
+                                
+                                <ApexPointSeries TItem="MeasureDto"
+                                               Items="measures"
+                                               Name="Température Cible"
+                                               SeriesType="SeriesType.Line"
+                                               XValue="@(e => e.Timestamp)"
+                                               YValue="@(e => (decimal)e.TargetTemperature)"
+                                               Color="#ffc107" />
+                                
+                                <ApexPointSeries TItem="MeasureDto"
+                                               Items="measures"
+                                               Name="Température Extérieure"
+                                               SeriesType="SeriesType.Line"
+                                               XValue="@(e => e.Timestamp)"
+                                               YValue="@(e => (decimal)e.OutdoorTemperature)"
+                                               Color="#17a2b8" />
+                            </ApexChart>
+                        }
+                        else
+                        {
+                            <div class="text-center">
+                                <p>Aucune donnée disponible pour la période sélectionnée.</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<DeviceDto> devices = new();
+    private List<MeasureDto> measures = new();
+    private TemperatureStatsDto? stats;
+    private bool isLoading = true;
+    
+    private int? selectedDeviceId;
+    private string selectedPeriod = "day";
+    private string selectedInterval = "hour";
+    
+    private ApexChartOptions<MeasureDto> chartOptions = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDevices();
+        await LoadData();
+        ConfigureChart();
+    }
+
+    private void ConfigureChart()
+    {
+        chartOptions = new ApexChartOptions<MeasureDto>
+        {
+            Theme = new Theme
+            {
+                Mode = Mode.Light
+            },
+            Chart = new Chart
+            {
+                Toolbar = new Toolbar
+                {
+                    Show = true,
+                    Tools = new Tools
+                    {
+                        Download = true,
+                        Pan = true,
+                        Zoom = true,
+                        Reset = true
+                    }
+                },
+                Zoom = new Zoom
+                {
+                    Enabled = true
+                }
+            },
+            Xaxis = new XAxis
+            {
+                Type = XAxisType.Datetime,
+                Title = new AxisTitle { Text = "Temps" }
+            },
+            Yaxis = new List<YAxis>
+            {
+                new YAxis
+                {
+                    Title = new AxisTitle { Text = "Température (°C)" }
+                }
+            },
+            Stroke = new Stroke
+            {
+                Width = 2,
+                Curve = Curve.Smooth
+            },
+            Tooltip = new Tooltip
+            {
+                Shared = true,
+                Intersect = false
+            },
+            Legend = new Legend
+            {
+                Show = true,
+                Position = LegendPosition.Top
+            }
+        };
+    }
+
+    private async Task LoadDevices()
+    {
+        devices = await ApiService.GetDevicesAsync();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        var (from, to) = GetDateRange();
+        
+        measures = await ApiService.GetMeasuresAsync(selectedDeviceId, from, to, selectedInterval);
+        stats = await ApiService.GetStatsAsync(selectedDeviceId, from, to);
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private (DateTime from, DateTime to) GetDateRange()
+    {
+        var now = DateTime.Now;
+        return selectedPeriod switch
+        {
+            "hour" => (now.AddHours(-1), now),
+            "day" => (now.AddDays(-1), now),
+            "week" => (now.AddDays(-7), now),
+            "month" => (now.AddDays(-30), now),
+            _ => (now.AddDays(-1), now)
+        };
+    }
+
+    private async Task OnDeviceChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var deviceId))
+        {
+            selectedDeviceId = deviceId;
+        }
+        else
+        {
+            selectedDeviceId = null;
+        }
+        
+        await LoadData();
+    }
+
+    private async Task OnPeriodChanged(ChangeEventArgs e)
+    {
+        selectedPeriod = e.Value?.ToString() ?? "day";
+        await LoadData();
+    }
+
+    private async Task OnIntervalChanged(ChangeEventArgs e)
+    {
+        selectedInterval = e.Value?.ToString() ?? "hour";
+        await LoadData();
+    }
+
+    private async Task RefreshData()
+    {
+        await LoadData();
+    }
+}
