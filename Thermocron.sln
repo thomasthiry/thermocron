@@ -2,6 +2,10 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thermocron", "Thermocron\Thermocron.csproj", "{09D73870-6881-4027-9C10-0546F8A4A52D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThermocronApi", "ThermocronApi\ThermocronApi.csproj", "{AB4009C1-20C5-4DFD-A068-B3EBD20FB6CF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThermocronWeb", "ThermocronWeb\ThermocronWeb.csproj", "{10AD86E3-D387-4981-999A-2C95E262883A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +16,13 @@ Global
 		{09D73870-6881-4027-9C10-0546F8A4A52D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{09D73870-6881-4027-9C10-0546F8A4A52D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{09D73870-6881-4027-9C10-0546F8A4A52D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AB4009C1-20C5-4DFD-A068-B3EBD20FB6CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB4009C1-20C5-4DFD-A068-B3EBD20FB6CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB4009C1-20C5-4DFD-A068-B3EBD20FB6CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB4009C1-20C5-4DFD-A068-B3EBD20FB6CF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10AD86E3-D387-4981-999A-2C95E262883A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10AD86E3-D387-4981-999A-2C95E262883A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10AD86E3-D387-4981-999A-2C95E262883A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10AD86E3-D387-4981-999A-2C95E262883A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
