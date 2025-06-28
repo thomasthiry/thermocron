@@ -1,8 +1,10 @@
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM nginx:alpine
 
-COPY . /app
-WORKDIR /app
+# Remove default nginx website
+RUN rm -rf /usr/share/nginx/html/*
 
-EXPOSE 8080
+COPY ./wwwroot/ /usr/share/nginx/html/
 
-ENTRYPOINT ["dotnet", "ThermocronWeb.dll"]
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
