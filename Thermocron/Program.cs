@@ -1,6 +1,6 @@
 ﻿using System.Net.Http.Headers;
 using System.Text.Json;
-using IdentityModel.Client;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Thermocron.Api;
@@ -68,24 +68,57 @@ internal class Program
     {
         var client = _httpClientFactory.CreateClient();
 
-        var tokenResponse = await client.RequestPasswordTokenAsync(new PasswordTokenRequest
-        {
-            Address = "https://app.muller-intuitiv.net/oauth2/token",
-            ClientId = "59e604948fe283fd4dc7e355",
-            ClientSecret = "rAeWu8Y3YqXEPqRJ4BpFzFG98MRXpCcz",
-            Parameters = new Parameters(new []{ new KeyValuePair<string, string>("user_prefix", "muller") }),
-            UserName = _mullerUsername,
-            Password = _mullerPassword,
-            Scope = "read_muller write_muller",
-            GrantType = "password"
-        });
+        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+        client.DefaultRequestHeaders.Add("Accept", "*/*");
 
-        if (tokenResponse.IsError)
+        var formData = new List<KeyValuePair<string, string>>
         {
-            throw new Exception($"Token request failed: {tokenResponse.Error}");
+            new("client_id", "59e604948fe283fd4dc7e355"),
+            new("client_secret", "rAeWu8Y3YqXEPqRJ4BpFzFG98MRXpCcz"),
+            new("username", _mullerUsername),
+            new("password", _mullerPassword),
+            new("scope", "read_muller write_muller"),
+            new("grant_type", "password"),
+            new("user_prefix", "muller")
+        };
+
+        var content = new FormUrlEncodedContent(formData);
+
+        var response = await client.PostAsync("https://app.muller-intuitiv.net/oauth2/token", content);
+        var responseContent = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            Console.WriteLine($"Token request failed with status code: {response.StatusCode}");
+            Console.WriteLine($"Response Content: {responseContent}");
+            throw new Exception($"Token request failed with status code: {response.StatusCode}");
         }
 
-        return tokenResponse.AccessToken;
+        // Parse the response to extract the access token
+        var tokenData = JsonSerializer.Deserialize<TokenResponse>(responseContent);
+        if (string.IsNullOrEmpty(tokenData?.AccessToken))
+        {
+            Console.WriteLine($"Failed to extract access token from response: {responseContent}");
+            throw new Exception("Failed to extract access token from response.");
+        }
+
+        Console.WriteLine("Token request successful.");
+        return tokenData.AccessToken;
+    }
+
+    private class TokenResponse
+    {
+        [JsonPropertyName("access_token")]
+        public string AccessToken { get; set; }
+        
+        [JsonPropertyName("token_type")]
+        public string TokenType { get; set; }
+        
+        [JsonPropertyName("expires_in")]
+        public int ExpiresIn { get; set; }
+        
+        [JsonPropertyName("refresh_token")]
+        public string RefreshToken { get; set; }
     }
 
     private static async Task Execute()
