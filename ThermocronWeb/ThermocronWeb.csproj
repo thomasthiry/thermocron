@@ -20,6 +20,11 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <DependentUpon>Dockerfile</DependentUpon>
     </None>
+    <None Remove="README-API-Configuration.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="wwwroot\appsettings.Development.json" />
   </ItemGroup>
 
 </Project>

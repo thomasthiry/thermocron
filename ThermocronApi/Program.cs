@@ -10,8 +10,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Configuration de la base de données
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-    ?? "Host=localhost:15432;Database=thermocron_dev;Username=thermocron_dev;Password=thermocron";
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -24,7 +23,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("BlazorPolicy", policy =>
     {
-        policy.WithOrigins("https://localhost:7000", "http://localhost:5000", "http://localhost:5100")
+        policy.WithOrigins("http://localhost", "http://vps746818.ovh.net:34931")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });

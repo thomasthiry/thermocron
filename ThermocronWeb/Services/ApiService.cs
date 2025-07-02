@@ -8,10 +8,10 @@ public class ApiService
     private readonly HttpClient _httpClient;
     private readonly JsonSerializerOptions _jsonOptions;
 
-    public ApiService(HttpClient httpClient)
+    public ApiService(HttpClient httpClient, ApiSettings apiSettings)
     {
         _httpClient = httpClient;
-        _httpClient.BaseAddress = new Uri("http://localhost:5001/api/");
+        _httpClient.BaseAddress = new Uri(apiSettings.BaseUrl);
         
         _jsonOptions = new JsonSerializerOptions
         {

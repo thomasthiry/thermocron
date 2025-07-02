@@ -2,11 +2,18 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using ThermocronWeb;
 using ThermocronWeb.Services;
+using ThermocronWeb.Models;
 using ApexCharts;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
+
+
+// var apiSettings = new ApiSettings { BaseUrl = "http://localhost:8080/api/" };
+var apiSettings = new ApiSettings { BaseUrl = "http://vps746818.ovh.net:34932/api/" };
+
+builder.Services.AddSingleton(apiSettings);
 
 // Configuration du HttpClient pour l'API
 builder.Services.AddScoped<ApiService>();

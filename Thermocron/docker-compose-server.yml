@@ -1,13 +1,25 @@
-﻿
+﻿version: '2'
 services:
   job:
     container_name: thermocron_job_prod
-    image: thomasthiry/thermocron:2025-02-24.4
+    image: thomasthiry/thermocron:2025-03-03.1
     environment:
-     - thermocronMullerUsername=${thermocron_muller_username}
-     - thermocronMullerPassword=${thermocron_muller_password}
-     - thermocronMullerHomeId=${thermocron_muller_home_id}
-     - connectionString=Host=thermocron_db_prod:5432;Database=thermocron_prod;Username=${thermocron_postgres_user_prod};Password=${thermocron_postgres_password_prod}
+      - thermocronMullerUsername=${thermocron_muller_username}
+      - thermocronMullerPassword=${thermocron_muller_password}
+      - thermocronMullerHomeId=${thermocron_muller_home_id}
+      - connectionString=Host=thermocron_db_prod:5432;Database=thermocron_prod;Username=${thermocron_postgres_user_prod};Password=${thermocron_postgres_password_prod}
+  api:
+    container_name: thermocron_api_prod
+    image: thomasthiry/thermocron-api:2025-06-29.3
+    ports:
+      - "34932:8080"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=thermocron_db_prod:5432;Database=thermocron_prod;Username=${thermocron_postgres_user_prod};Password=${thermocron_postgres_password_prod}
+  web:
+    container_name: thermocron_web_prod
+    image: thomasthiry/thermocron-web:2025-06-29.5-prod
+    ports:
+      - "34931:80"
   db:
     container_name: thermocron_db_prod
     image: postgres

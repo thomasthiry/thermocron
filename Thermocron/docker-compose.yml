@@ -9,17 +9,17 @@
 #     - connectionString=Host=thermocron_db_dev:5432;Database=thermocron_dev;Username=${thermocron_postgres_user_dev};Password=${thermocron_postgres_password_dev}
   api:
     container_name: thermocron_api_dev
-    image: thomasthiry/thermocron-api:2025-06-28.1
+    image: thomasthiry/thermocron-api:2025-06-29.2
     ports:
       - "8080:8080"
     environment:
      - connectionString=Host=thermocron_db_dev:5432;Database=thermocron_dev;Username=${thermocron_postgres_user_dev};Password=${thermocron_postgres_password_dev}
   web:
     container_name: thermocron_web_dev
-    image: thomasthiry/thermocron-web:2025-06-28.1
+    image: thomasthiry/thermocron-web:2025-06-29.4
     ports:
       - "443:443"
-    # environment:
+      - "80:80"
   db:
     container_name: thermocron_db_dev
     image: postgres
