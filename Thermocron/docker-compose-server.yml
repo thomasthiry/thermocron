@@ -2,24 +2,35 @@
 services:
   job:
     container_name: thermocron_job_prod
-    image: thomasthiry/thermocron:2025-03-03.1
+    image: thomasthiry/thermocron:2025-07-02.1
     environment:
-      - thermocronMullerUsername=${thermocron_muller_username}
-      - thermocronMullerPassword=${thermocron_muller_password}
-      - thermocronMullerHomeId=${thermocron_muller_home_id}
-      - connectionString=Host=thermocron_db_prod:5432;Database=thermocron_prod;Username=${thermocron_postgres_user_prod};Password=${thermocron_postgres_password_prod}
+     - thermocronMullerUsername=${thermocron_muller_username}
+     - thermocronMullerPassword=${thermocron_muller_password}
+     - thermocronMullerHomeId=${thermocron_muller_home_id}
+     - connectionString=Host=thermocron_db_prod:5432;Database=thermocron_prod;Username=${thermocron_postgres_user_prod};Password=${thermocron_postgres_password_prod}
   api:
     container_name: thermocron_api_prod
-    image: thomasthiry/thermocron-api:2025-06-29.3
-    ports:
-      - "34932:8080"
+    image: thomasthiry/thermocron-api:2025-06-29.4
+    expose:
+      - 8080
+    networks:
+     - network-shared-with-proxy
     environment:
-      - ConnectionStrings__DefaultConnection=Host=thermocron_db_prod:5432;Database=thermocron_prod;Username=${thermocron_postgres_user_prod};Password=${thermocron_postgres_password_prod}
+     - ConnectionStrings__DefaultConnection=Host=thermocron_db_prod:5432;Database=thermocron_prod;Username=${thermocron_postgres_user_prod};Password=${thermocron_postgres_password_prod}
+     - VIRTUAL_HOST=thermocron-api.evolve11.com
+     - LETSENCRYPT_HOST=thermocron-api.evolve11.com
+     - LETSENCRYPT_EMAIL=thomas.thiry@evolve11.com
   web:
     container_name: thermocron_web_prod
     image: thomasthiry/thermocron-web:2025-06-29.5-prod
-    ports:
-      - "34931:80"
+    expose:
+      - 80
+    networks:
+     - network-shared-with-proxy
+    environment:
+     - VIRTUAL_HOST=thermocron.evolve11.com
+     - LETSENCRYPT_HOST=thermocron.evolve11.com
+     - LETSENCRYPT_EMAIL=thomas.thiry@evolve11.com
   db:
     container_name: thermocron_db_prod
     image: postgres
@@ -31,6 +42,12 @@ services:
       - POSTGRES_USER=${thermocron_postgres_user_prod}
       - POSTGRES_PASSWORD=${thermocron_postgres_password_prod}
       - PGDATA=/thermocron_sqldata
+    networks:
+     - network-shared-with-proxy
+
+networks:
+  network-shared-with-proxy:
+    external: true
 
 volumes:
   thermocron_sqldata_prod:

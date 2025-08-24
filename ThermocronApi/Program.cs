@@ -23,7 +23,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("BlazorPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost", "http://vps746818.ovh.net:34931")
+        policy.WithOrigins("http://localhost", "https://thermocron.evolve11.com")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });

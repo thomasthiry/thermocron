@@ -11,7 +11,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 
 // var apiSettings = new ApiSettings { BaseUrl = "http://localhost:8080/api/" };
-var apiSettings = new ApiSettings { BaseUrl = "http://vps746818.ovh.net:34932/api/" };
+var apiSettings = new ApiSettings { BaseUrl = "https://thermocron-api.evolve11.com/api/" };
 
 builder.Services.AddSingleton(apiSettings);
 
