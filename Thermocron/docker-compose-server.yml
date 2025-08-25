@@ -8,6 +8,8 @@ services:
      - thermocronMullerPassword=${thermocron_muller_password}
      - thermocronMullerHomeId=${thermocron_muller_home_id}
      - connectionString=Host=thermocron_db_prod:5432;Database=thermocron_prod;Username=${thermocron_postgres_user_prod};Password=${thermocron_postgres_password_prod}
+    networks:
+     - network-shared-with-proxy
   api:
     container_name: thermocron_api_prod
     image: thomasthiry/thermocron-api:2025-06-29.4
