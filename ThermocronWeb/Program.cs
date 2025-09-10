@@ -10,8 +10,8 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 
-// var apiSettings = new ApiSettings { BaseUrl = "http://localhost:8080/api/" };
-var apiSettings = new ApiSettings { BaseUrl = "https://thermocron-api.evolve11.com/api/" };
+var apiSettings = new ApiSettings { BaseUrl = "http://localhost:5001/api/" };
+//var apiSettings = new ApiSettings { BaseUrl = "https://thermocron-api.evolve11.com/api/" };
 
 builder.Services.AddSingleton(apiSettings);
 

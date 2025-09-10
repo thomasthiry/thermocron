@@ -1,0 +1,7 @@
+﻿<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run Web+Api" type="CompoundRunConfigurationType">
+    <toRun name="ThermocronApi: http" type="LaunchSettings" />
+    <toRun name="ThermocronWeb: http" type="LaunchSettings" />
+    <method v="2" />
+  </configuration>
+</component>
