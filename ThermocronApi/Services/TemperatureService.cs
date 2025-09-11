@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ThermocronApi.Data;
 using ThermocronApi.DTOs;
+using ThermocronApi.Extensions;
 
 namespace ThermocronApi.Services;
 
@@ -21,7 +22,7 @@ public class TemperatureService
                 Id = d.Id,
                 Name = d.Name,
                 LastMeasureTime = d.Measures.OrderByDescending(m => m.Timestamp).FirstOrDefault().Timestamp,
-                LastMeasuredTemperature = d.Measures.OrderByDescending(m => m.Timestamp).FirstOrDefault().MeasuredTemperature
+                LastMeasuredTemperature = d.Measures.OrderByDescending(m => m.Timestamp).FirstOrDefault().MeasuredTemperature.RoundTemperature()
             })
             .ToListAsync();
     }
@@ -45,9 +46,9 @@ public class TemperatureService
                 .Select(g => new MeasureDto
                 {
                     Timestamp = g.Key.Date,
-                    MeasuredTemperature = g.Average(m => m.MeasuredTemperature),
-                    TargetTemperature = g.Average(m => m.TargetTemperature),
-                    OutdoorTemperature = g.Average(m => m.OutdoorTemperature)
+                    MeasuredTemperature = g.Average(m => m.MeasuredTemperature).RoundTemperature(),
+                    TargetTemperature = g.Average(m => m.TargetTemperature).RoundTemperature(),
+                    OutdoorTemperature = g.Average(m => m.OutdoorTemperature).RoundTemperature()
                 })
                 .OrderBy(m => m.Timestamp)
                 .ToListAsync();
@@ -65,9 +66,9 @@ public class TemperatureService
                 .Select(g => new MeasureDto
                 {
                     Timestamp = new DateTime(g.Key.Year, g.Key.Month, g.Key.Day, g.Key.Hour, 0, 0),
-                    MeasuredTemperature = g.Average(m => m.MeasuredTemperature),
-                    TargetTemperature = g.Average(m => m.TargetTemperature),
-                    OutdoorTemperature = g.Average(m => m.OutdoorTemperature)
+                    MeasuredTemperature = g.Average(m => m.MeasuredTemperature).RoundTemperature(),
+                    TargetTemperature = g.Average(m => m.TargetTemperature).RoundTemperature(),
+                    OutdoorTemperature = g.Average(m => m.OutdoorTemperature).RoundTemperature()
                 })
                 .OrderBy(m => m.Timestamp)
                 .ToListAsync();
@@ -108,15 +109,15 @@ public class TemperatureService
             .GroupBy(m => 1)
             .Select(g => new TemperatureStatsDto
             {
-                MinMeasured = g.Min(m => m.MeasuredTemperature),
-                MaxMeasured = g.Max(m => m.MeasuredTemperature),
-                AvgMeasured = g.Average(m => m.MeasuredTemperature),
-                MinTarget = g.Min(m => m.TargetTemperature),
-                MaxTarget = g.Max(m => m.TargetTemperature),
-                AvgTarget = g.Average(m => m.TargetTemperature),
-                MinOutdoor = g.Min(m => m.OutdoorTemperature),
-                MaxOutdoor = g.Max(m => m.OutdoorTemperature),
-                AvgOutdoor = g.Average(m => m.OutdoorTemperature),
+                MinMeasured = g.Min(m => m.MeasuredTemperature).RoundTemperature(),
+                MaxMeasured = g.Max(m => m.MeasuredTemperature).RoundTemperature(),
+                AvgMeasured = g.Average(m => m.MeasuredTemperature).RoundTemperature(),
+                MinTarget = g.Min(m => m.TargetTemperature).RoundTemperature(),
+                MaxTarget = g.Max(m => m.TargetTemperature).RoundTemperature(),
+                AvgTarget = g.Average(m => m.TargetTemperature).RoundTemperature(),
+                MinOutdoor = g.Min(m => m.OutdoorTemperature).RoundTemperature(),
+                MaxOutdoor = g.Max(m => m.OutdoorTemperature).RoundTemperature(),
+                AvgOutdoor = g.Average(m => m.OutdoorTemperature).RoundTemperature(),
                 TotalMeasures = g.Count()
             })
             .FirstAsync();
@@ -141,9 +142,9 @@ public class TemperatureService
         return new MeasureDto
         {
             Timestamp = latest.Timestamp,
-            MeasuredTemperature = latest.MeasuredTemperature,
-            TargetTemperature = latest.TargetTemperature,
-            OutdoorTemperature = latest.OutdoorTemperature
+            MeasuredTemperature = latest.MeasuredTemperature.RoundTemperature(),
+            TargetTemperature = latest.TargetTemperature.RoundTemperature(),
+            OutdoorTemperature = latest.OutdoorTemperature.RoundTemperature()
         };
     }
 }
