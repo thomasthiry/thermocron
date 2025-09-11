@@ -19,24 +19,33 @@ public class ApiService
         };
     }
 
-    public async Task<List<DeviceDto>> GetDevicesAsync()
+    public async Task<ApiResult<List<DeviceDto>>> GetDevicesAsync()
     {
         try
         {
             var response = await _httpClient.GetAsync("device");
-            response.EnsureSuccessStatusCode();
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                return ApiResult<List<DeviceDto>>.Error(
+                    $"Erreur lors de la récupération des capteurs: {errorContent}", 
+                    (int)response.StatusCode);
+            }
             
             var json = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<List<DeviceDto>>(json, _jsonOptions) ?? new List<DeviceDto>();
+            var devices = JsonSerializer.Deserialize<List<DeviceDto>>(json, _jsonOptions) ?? new List<DeviceDto>();
+            return ApiResult<List<DeviceDto>>.Success(devices);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erreur lors de la récupération des devices: {ex.Message}");
-            return new List<DeviceDto>();
+            return ApiResult<List<DeviceDto>>.Error(
+                $"Erreur de connexion lors de la récupération des capteurs: {ex.Message}", 
+                500);
         }
     }
 
-    public async Task<List<MeasureDto>> GetMeasuresAsync(int? deviceId, DateTime from, DateTime to, string interval = "hour")
+    public async Task<ApiResult<List<MeasureDto>>> GetMeasuresAsync(int? deviceId, DateTime from, DateTime to, string interval = "hour")
     {
         try
         {
@@ -48,19 +57,28 @@ public class ApiService
             }
 
             var response = await _httpClient.GetAsync(query);
-            response.EnsureSuccessStatusCode();
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                return ApiResult<List<MeasureDto>>.Error(
+                    $"Erreur lors de la récupération des mesures: {errorContent}", 
+                    (int)response.StatusCode);
+            }
             
             var json = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<List<MeasureDto>>(json, _jsonOptions) ?? new List<MeasureDto>();
+            var measures = JsonSerializer.Deserialize<List<MeasureDto>>(json, _jsonOptions) ?? new List<MeasureDto>();
+            return ApiResult<List<MeasureDto>>.Success(measures);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erreur lors de la récupération des mesures: {ex.Message}");
-            return new List<MeasureDto>();
+            return ApiResult<List<MeasureDto>>.Error(
+                $"Erreur de connexion lors de la récupération des mesures: {ex.Message}", 
+                500);
         }
     }
 
-    public async Task<TemperatureStatsDto?> GetStatsAsync(int? deviceId, DateTime from, DateTime to)
+    public async Task<ApiResult<TemperatureStatsDto>> GetStatsAsync(int? deviceId, DateTime from, DateTime to)
     {
         try
         {
@@ -72,19 +90,28 @@ public class ApiService
             }
 
             var response = await _httpClient.GetAsync(query);
-            response.EnsureSuccessStatusCode();
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                return ApiResult<TemperatureStatsDto>.Error(
+                    $"Erreur lors de la récupération des statistiques: {errorContent}", 
+                    (int)response.StatusCode);
+            }
             
             var json = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<TemperatureStatsDto>(json, _jsonOptions);
+            var stats = JsonSerializer.Deserialize<TemperatureStatsDto>(json, _jsonOptions);
+            return ApiResult<TemperatureStatsDto>.Success(stats!);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erreur lors de la récupération des statistiques: {ex.Message}");
-            return null;
+            return ApiResult<TemperatureStatsDto>.Error(
+                $"Erreur de connexion lors de la récupération des statistiques: {ex.Message}", 
+                500);
         }
     }
 
-    public async Task<MeasureDto?> GetLatestMeasureAsync(int? deviceId)
+    public async Task<ApiResult<MeasureDto>> GetLatestMeasureAsync(int? deviceId)
     {
         try
         {
@@ -96,15 +123,24 @@ public class ApiService
             }
 
             var response = await _httpClient.GetAsync(query);
-            response.EnsureSuccessStatusCode();
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                return ApiResult<MeasureDto>.Error(
+                    $"Erreur lors de la récupération de la dernière mesure: {errorContent}", 
+                    (int)response.StatusCode);
+            }
             
             var json = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<MeasureDto>(json, _jsonOptions);
+            var measure = JsonSerializer.Deserialize<MeasureDto>(json, _jsonOptions);
+            return ApiResult<MeasureDto>.Success(measure!);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erreur lors de la récupération de la dernière mesure: {ex.Message}");
-            return null;
+            return ApiResult<MeasureDto>.Error(
+                $"Erreur de connexion lors de la récupération de la dernière mesure: {ex.Message}", 
+                500);
         }
     }
 }

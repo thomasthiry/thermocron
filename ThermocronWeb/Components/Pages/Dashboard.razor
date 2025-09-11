@@ -48,6 +48,19 @@
         </div>
     </div>
 
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>Erreur:</strong> @errorMessage
+                    <button type="button" class="btn-close" @onclick="() => errorMessage = null" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+    }
+
     @if (isLoading)
     {
         <div class="row">
@@ -170,6 +183,7 @@
     private List<MeasureDto> measures = new();
     private TemperatureStatsDto? stats;
     private bool isLoading = true;
+    private string? errorMessage;
     
     private int? selectedDeviceId;
     private string selectedPeriod = "day";
@@ -242,18 +256,52 @@
 
     private async Task LoadDevices()
     {
-        devices = await ApiService.GetDevicesAsync();
+        var result = await ApiService.GetDevicesAsync();
+        if (result.IsSuccess)
+        {
+            devices = result.Data ?? new List<DeviceDto>();
+            errorMessage = null;
+        }
+        else
+        {
+            devices = new List<DeviceDto>();
+            errorMessage = result.ErrorMessage;
+        }
     }
 
     private async Task LoadData()
     {
         isLoading = true;
+        errorMessage = null;
         StateHasChanged();
 
         var (from, to) = GetDateRange();
         
-        measures = await ApiService.GetMeasuresAsync(selectedDeviceId, from, to, selectedInterval);
-        stats = await ApiService.GetStatsAsync(selectedDeviceId, from, to);
+        var measuresResult = await ApiService.GetMeasuresAsync(selectedDeviceId, from, to, selectedInterval);
+        var statsResult = await ApiService.GetStatsAsync(selectedDeviceId, from, to);
+
+        if (measuresResult.IsSuccess)
+        {
+            measures = measuresResult.Data ?? new List<MeasureDto>();
+        }
+        else
+        {
+            measures = new List<MeasureDto>();
+            errorMessage = measuresResult.ErrorMessage;
+        }
+
+        if (statsResult.IsSuccess)
+        {
+            stats = statsResult.Data;
+        }
+        else
+        {
+            stats = null;
+            if (string.IsNullOrEmpty(errorMessage))
+            {
+                errorMessage = statsResult.ErrorMessage;
+            }
+        }
 
         isLoading = false;
         StateHasChanged();
