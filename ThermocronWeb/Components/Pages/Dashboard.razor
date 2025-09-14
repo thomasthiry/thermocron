@@ -31,8 +31,23 @@
                 <option value="day" selected>Dernier jour</option>
                 <option value="week">Dernière semaine</option>
                 <option value="month">Dernier mois</option>
+                <option value="custom">Période personnalisée</option>
             </select>
         </div>
+
+        @if (selectedPeriod == "custom")
+        {
+            <div class="col-md-3">
+                <label for="dateFrom" class="form-label">Du:</label>
+                <input type="datetime-local" id="dateFrom" class="form-control" 
+                       @bind="customFromDate" @bind:after="OnCustomDateChanged" />
+            </div>
+            <div class="col-md-3">
+                <label for="dateTo" class="form-label">Au:</label>
+                <input type="datetime-local" id="dateTo" class="form-control" 
+                       @bind="customToDate" @bind:after="OnCustomDateChanged" />
+            </div>
+        }
         <div class="col-md-3">
             <label for="intervalSelect" class="form-label">Intervalle:</label>
             <select id="intervalSelect" class="form-select" @onchange="OnIntervalChanged">
@@ -189,6 +204,10 @@
     private string selectedPeriod = "day";
     private string selectedInterval = "hour";
     
+    // Variables for custom date range
+    private DateTime customFromDate = DateTime.Now.AddDays(-1);
+    private DateTime customToDate = DateTime.Now;
+    
     private ApexChartOptions<MeasureDto> chartOptions = new();
 
     protected override async Task OnInitializedAsync()
@@ -333,6 +352,11 @@
 
     private (DateTime from, DateTime to) GetDateRange()
     {
+        if (selectedPeriod == "custom")
+        {
+            return (customFromDate, customToDate);
+        }
+        
         var now = DateTime.Now;
         return selectedPeriod switch
         {
@@ -361,6 +385,25 @@
     private async Task OnPeriodChanged(ChangeEventArgs e)
     {
         selectedPeriod = e.Value?.ToString() ?? "day";
+        
+        // Initialize custom dates when switching to custom mode
+        if (selectedPeriod == "custom")
+        {
+            customFromDate = DateTime.Now.AddDays(-1);
+            customToDate = DateTime.Now;
+        }
+        
+        await LoadData();
+    }
+
+    private async Task OnCustomDateChanged()
+    {
+        // Validate date range
+        if (customFromDate >= customToDate)
+        {
+            customFromDate = customToDate.AddHours(-1);
+        }
+        
         await LoadData();
     }
 
