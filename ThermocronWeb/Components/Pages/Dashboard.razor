@@ -245,7 +245,30 @@
             Tooltip = new Tooltip
             {
                 Shared = true,
-                Intersect = false
+                Intersect = false,
+                X = new TooltipX
+                {
+                    Formatter = @"function(value, { w }) {
+                        const date = new Date(value);
+                        if (w && w.globals) {
+                            const timeRange = w.globals.maxX - w.globals.minX;
+                            const oneDayInMs = 24 * 60 * 60 * 1000;
+                            
+                            // If viewing less than or equal to 2 days, show date and time
+                            if (timeRange <= 2 * oneDayInMs) {
+                                return date.toLocaleString('fr-FR', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                });
+                            }
+                        }
+                        // Otherwise, just show the date
+                        return date.toLocaleDateString('fr-FR');
+                    }"
+                }
             },
             Legend = new Legend
             {
